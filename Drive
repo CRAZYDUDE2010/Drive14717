@@ -17,9 +17,6 @@ public class Drive extends LinearOpMode {
     private final ElapsedTime runtime = new ElapsedTime();
     private DcMotor RD = null;
     private DcMotor LD = null;
-    private DcMotorEx SHOOT = null;
-    private CRServo Left_servo = null;
-    private CRServo Right_servo = null;
     private double speedLimiter = 1;
 
     double motorVelocity = 2360;
@@ -41,33 +38,28 @@ public class Drive extends LinearOpMode {
         double yaw = 0;
 
         LD = hardwareMap.get(DcMotor.class, "Left_Drive");
-        SHOOT = hardwareMap.get(DcMotorEx.class, "Shooter");
         RD = hardwareMap.get(DcMotor.class, "Right_Drive");
-        Right_servo = hardwareMap.get(CRServo.class, "Right_servo");
-        Left_servo = hardwareMap.get(CRServo.class, "Left_servo");
+
 
 
 
         RD.setDirection(DcMotor.Direction.FORWARD);
         LD.setDirection(DcMotor.Direction.REVERSE);
-        SHOOT.setDirection(DcMotorEx.Direction.REVERSE);
-        Left_servo.setDirection(CRServo.Direction.FORWARD);
-        Right_servo.setDirection(CRServo.Direction.REVERSE);
+
 
 
         RD.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LD.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        SHOOT.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER);
+
 
 
         RD.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         LD.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        SHOOT.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
 
         RD.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         LD.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        SHOOT.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+
 
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
@@ -91,17 +83,6 @@ public class Drive extends LinearOpMode {
                 speedLimiter = 1.65;
             }
 
-            if(gamepad1.a) {
-                launchLimiter = 0.55;
-            }
-
-            if(gamepad1.b) {
-                launchLimiter = 0;
-            }
-
-            if(gamepad1.y){
-                launchLimiter = 0.7;
-            }
 
 
 
