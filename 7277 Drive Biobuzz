@@ -1,0 +1,125 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@TeleOp(name = "VROOOOOOOOM")
+public class Drive extends LinearOpMode {
+    private final ElapsedTime runtime = new ElapsedTime();
+    private DcMotor FR = null;
+    private DcMotor FL = null;
+    private DcMotor BR = null;
+    private DcMotor BL = null;
+
+    private DcMotor intakeMotor = null;
+
+    private double speedLimiter = 1;
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        double axial = 0;
+        double lateral = 0;
+        double yaw = 0;
+
+
+        intakeMotor = hardwareMap.get(DcMotor.class, "IntakeMotor");
+        FR = hardwareMap.get(DcMotor.class, "FR");
+        FL = hardwareMap.get(DcMotor.class, "FL");
+        BR = hardwareMap.get(DcMotor.class, "BR");
+        BL = hardwareMap.get(DcMotor.class, "BL");
+
+        FL.setDirection(DcMotor.Direction.REVERSE);
+        FR.setDirection(DcMotor.Direction.FORWARD);
+        BL.setDirection(DcMotor.Direction.REVERSE);
+        BR.setDirection(DcMotor.Direction.FORWARD);
+
+        FR.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        FL.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        BR.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        BL.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        FR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        FL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        BR.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        BL.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        FR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        FL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BR.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        BL.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
+        // Wait for the game to start (driver presses PLAY)
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+
+        waitForStart();
+        runtime.reset();
+
+        while (opModeIsActive()) {
+            if (gamepad1.dpad_down) {
+                speedLimiter = 2;
+            } else if (gamepad1.dpad_up) {
+                speedLimiter = 1;
+            } else if (gamepad1.dpad_right) {
+                speedLimiter = 1.65;
+            }
+
+            axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+            lateral = gamepad1.left_stick_x * 1.1;
+            yaw = gamepad1.right_stick_x;
+
+            // Combine the joystick requests for each axis-motion to determine each wheel's power.
+            double leftFrontPower = axial + lateral + yaw;
+            double rightFrontPower = axial - lateral - yaw;
+            double leftBackPower = axial - lateral + yaw;
+            double rightBackPower = axial + lateral - yaw;
+
+            // Normalize the values so no wheel power exceeds 100%
+            double max = Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower));
+            max = Math.max(max, Math.abs(leftBackPower));
+            max = Math.max(max, Math.abs(rightBackPower));
+
+            if (max > 1.0) {
+                leftFrontPower /= max;
+                rightFrontPower /= max;
+                leftBackPower /= max;
+                rightBackPower /= max;
+            }
+
+            // Intake controls
+            // Expected behaviour: holding down a will spin intake, holding down b will reverse intake spin
+             (gamepad1.right_bumper) {
+                intakeMotor.setPower(1);
+            } else if (gamepad1.left_bumper){
+                intakeMotor.setPower(0);
+            } else  (gamepad1.left_bumper) {
+                    intakeMotor.setPower(-1);
+            }
+
+            leftFrontPower /= speedLimiter;
+            rightFrontPower /= speedLimiter;
+            leftBackPower /= speedLimiter;
+            rightBackPower /= speedLimiter;
+
+            FL.setPower(leftFrontPower);
+            FR.setPower(rightFrontPower);
+            BL.setPower(leftBackPower);
+            BR.setPower(rightBackPower);
+
+            // Show the elapsed game time and wheel power.
+            telemetry.addData("Status", "Run Time: " + runtime.toString());
+            telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
+            telemetry.addData("Back left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
+            telemetry.addData("Current speedLimiter: ", speedLimiter);
+            telemetry.update();
+        }
+    }
+}
