@@ -1,0 +1,52 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
+@Autonomous(name = "BioBuzz Forward Auto", group = "Autonomous")
+public class BioBuzzForwardAuto extends LinearOpMode {
+
+    private DcMotor BR;
+    private DcMotor BL;
+    private DcMotor FR;
+    private DcMotor FL;
+
+    @Override
+    public void runOpMode() {
+
+        // Map the motors using your configured names
+        BR = hardwareMap.get(DcMotor.class, "BR");
+        BL = hardwareMap.get(DcMotor.class, "BL");
+        FR = hardwareMap.get(DcMotor.class, "FR");
+        FL = hardwareMap.get(DcMotor.class, "FL");
+
+        // Reverse the left-side motors
+        BL.setDirection(DcMotor.Direction.REVERSE);
+        FL.setDirection(DcMotor.Direction.REVERSE);
+
+        telemetry.addLine("BioBuzz Forward Auto Ready");
+        telemetry.update();
+
+        // Wait for the Play button
+        waitForStart();
+
+        if (opModeIsActive()) {
+
+            // Drive forward at 30% power
+            BR.setPower(1);
+            BL.setPower(1);
+            FR.setPower(1);
+            FL.setPower(1);
+
+            // Drive for 2 seconds
+            sleep(2000);
+
+            // Stop all motors
+            BR.setPower(0);
+            BL.setPower(0);
+            FR.setPower(0);
+            FL.setPower(0);
+        }
+    }
+}
