@@ -4,7 +4,9 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name = "VROOOOOOOOM")
@@ -14,8 +16,11 @@ public class Drive extends LinearOpMode {
     private DcMotor FL = null;
     private DcMotor BR = null;
     private DcMotor BL = null;
+    private CRServo shoot_servo;
 
     private DcMotor intakeMotor = null;
+
+    private DcMotor shoot = null;
 
     private double speedLimiter = 1;
 
@@ -31,11 +36,15 @@ public class Drive extends LinearOpMode {
         FL = hardwareMap.get(DcMotor.class, "FL");
         BR = hardwareMap.get(DcMotor.class, "BR");
         BL = hardwareMap.get(DcMotor.class, "BL");
+        shoot = hardwareMap.get(DcMotor.class, "shoot");
+        shoot_servo= hardwareMap.get(CRServo.class, "shoot_servo");
 
         FL.setDirection(DcMotor.Direction.REVERSE);
         FR.setDirection(DcMotor.Direction.FORWARD);
         BL.setDirection(DcMotor.Direction.REVERSE);
         BR.setDirection(DcMotor.Direction.FORWARD);
+        shoot.setDirection(DcMotor.Direction.FORWARD);
+
 
         FR.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         FL.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -56,7 +65,7 @@ public class Drive extends LinearOpMode {
 
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        // Wait for the game to start (driver presses PLAY)
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
@@ -71,6 +80,8 @@ public class Drive extends LinearOpMode {
             } else if (gamepad1.dpad_right) {
                 speedLimiter = 1.65;
             }
+
+
 
             axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
             lateral = gamepad1.left_stick_x * 1.1;
@@ -96,13 +107,29 @@ public class Drive extends LinearOpMode {
 
             // Intake controls
             // Expected behaviour: holding down a will spin intake, holding down b will reverse intake spin
-             (gamepad1.right_bumper) {
+             if (gamepad1.a) {
                 intakeMotor.setPower(1);
-            } else if (gamepad1.left_bumper){
-                intakeMotor.setPower(0);
-            } else  (gamepad1.left_bumper) {
-                    intakeMotor.setPower(-1);
+            } else if (gamepad1.b){
+                intakeMotor.setPower(-1);
+            } else {
+                    intakeMotor.setPower(0);
             }
+
+             if (gamepad1.x){
+                 shoot.setPower(1);
+             } else if (gamepad1.y){
+                 shoot.setPower(-1);
+             } else {
+                 shoot.setPower(0);
+             }
+
+             if (gamepad1.right_bumper){
+                 shoot_servo.setPower(1);
+             }else if (gamepad1.left_bumper){
+                 shoot_servo.setPower(-1);
+             } else {
+                 shoot_servo.setPower(0);
+             }
 
             leftFrontPower /= speedLimiter;
             rightFrontPower /= speedLimiter;
