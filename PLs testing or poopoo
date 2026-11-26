@@ -1,0 +1,139 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@TeleOp(name = "VROOOOOOOOM")
+public class Drive extends LinearOpMode {
+
+    // ---- Tunable constants ----
+    private static final double LATERAL_GAIN = 1.1;   // strafe compensation
+    private static final double SHOOT_POWER = 0.6;
+
+    // Speed scales (multipliers). Previously these were divisors: 1, 1.65, 2
+    private static final double SPEED_FULL = 1.0;
+    private static final double SPEED_MEDIUM = 1.0 / 1.65;
+    private static final double SPEED_SLOW = 1.0 / 2.0;
+
+    private final ElapsedTime runtime = new ElapsedTime();
+
+    private DcMotor FR, FL, BR, BL;
+    private DcMotor intakeMotor;
+    private DcMotor shoot;
+    private CRServo shoot_servo;
+
+    private boolean shootRunning = false;
+    private int intakeMode = 0;   // -1 = reverse, 0 = off, 1 = forward
+    private double speedScale = SPEED_FULL;
+
+    private boolean previousA = false;
+    private boolean previousB = false;
+    private boolean previousRightBumper = false;
+
+    @Override
+    public void runOpMode() throws InterruptedException {
+        // ---- Hardware ----
+        intakeMotor = hardwareMap.get(DcMotor.class, "IntakeMotor");
+        FR = hardwareMap.get(DcMotor.class, "FR");
+        FL = hardwareMap.get(DcMotor.class, "FL");
+        BR = hardwareMap.get(DcMotor.class, "BR");
+        BL = hardwareMap.get(DcMotor.class, "BL");
+        shoot = hardwareMap.get(DcMotor.class, "shoot");
+        shoot_servo = hardwareMap.get(CRServo.class, "shoot_servo");
+
+        FL.setDirection(DcMotor.Direction.REVERSE);
+        BL.setDirection(DcMotor.Direction.REVERSE);
+        FR.setDirection(DcMotor.Direction.FORWARD);
+        BR.setDirection(DcMotor.Direction.FORWARD);
+        shoot.setDirection(DcMotor.Direction.FORWARD);
+
+        DcMotor[] driveMotors = {FL, FR, BL, BR};
+        for (DcMotor m : driveMotors) {
+            m.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            m.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+            m.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        }
+        intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+
+        waitForStart();
+        runtime.reset();
+
+        // ---- Main loop ----
+        while (opModeIsActive()) {
+            // Speed selection (priority: down > up > right, same as before)
+            if (gamepad1.dpad_down) {
+                speedScale = SPEED_SLOW;
+            } else if (gamepad1.dpad_up) {
+                speedScale = SPEED_FULL;
+            } else if (gamepad1.dpad_right) {
+                speedScale = SPEED_MEDIUM;
+            }
+
+            // Mecanum drive
+            double axial = -gamepad1.left_stick_y;  // pushing stick forward gives negative value
+            double lateral = gamepad1.left_stick_x * LATERAL_GAIN;
+            double yaw = gamepad1.right_stick_x;
+
+            double leftFrontPower = axial + lateral + yaw;
+            double rightFrontPower = axial - lateral - yaw;
+            double leftBackPower = axial - lateral + yaw;
+            double rightBackPower = axial + lateral - yaw;
+            // the bot cannot crab walk, AI will say it's this but it isn't
+
+            // Normalize so no wheel exceeds 100%
+            double max = Math.max(
+                    Math.max(Math.abs(leftFrontPower), Math.abs(rightFrontPower)),
+                    Math.max(Math.abs(leftBackPower), Math.abs(rightBackPower)));
+            double scale = (max > 1.0 ? 1.0 / max : 1.0) * speedScale;
+
+            leftFrontPower *= scale;
+            rightFrontPower *= scale;
+            leftBackPower *= scale;
+            rightBackPower *= scale;
+
+            FL.setPower(leftFrontPower);
+            FR.setPower(rightFrontPower);
+            BL.setPower(leftBackPower);
+            BR.setPower(rightBackPower);
+
+            // Intake toggles: pressing the same button again turns it off
+            if (gamepad1.a && !previousA) {
+                intakeMode = (intakeMode == 1) ? 0 : 1;
+            }
+            if (gamepad1.b && !previousB) {
+                intakeMode = (intakeMode == -1) ? 0 : -1;
+            }
+            previousA = gamepad1.a;
+            previousB = gamepad1.b;
+            intakeMotor.setPower(intakeMode);
+
+            // Shooter toggle (right bumper)
+            if (gamepad1.right_bumper && !previousRightBumper) {
+                shootRunning = !shootRunning;
+            }
+            previousRightBumper = gamepad1.right_bumper;
+            shoot.setPower(shootRunning ? SHOOT_POWER : 0);
+
+            // Shoot servo: x = forward, y = reverse
+            shoot_servo.setPower(gamepad1.x ? 1 : (gamepad1.y ? -1 : 0));
+
+            // Telemetry
+            telemetry.addData("Status", "Run Time: " + runtime);
+            telemetry.addData("Front left/Right", "%4.2f, %4.2f", leftFrontPower, rightFrontPower);
+            telemetry.addData("Back left/Right", "%4.2f, %4.2f", leftBackPower, rightBackPower);
+            telemetry.addData("Speed scale", "%.2f", speedScale);
+            telemetry.addData("Intake", intakeMode);
+            telemetry.addData("Shooter", shootRunning ? "ON" : "OFF");
+            telemetry.update();
+        }
+    }
+}
